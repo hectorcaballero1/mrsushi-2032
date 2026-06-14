@@ -24,12 +24,10 @@ Carga las variables en la sesión antes de cualquier comando:
 export $(grep -v '^#' .env | xargs)
 ```
 
-## 2. Entorno virtual y dependencias
+## 2. Dependencias
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -t .
 ```
 
 ## 3. Deploy
@@ -50,6 +48,13 @@ Primero `resources.yml`, luego `serverless.yml`.
 
 ## 4. Seed
 
+Los scripts de seed corren localmente:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+```
+
 ### Admins
 
 ```bash
@@ -61,11 +66,9 @@ python -m seed.seed_admins dev
 Requiere que `resources.yml` ya esté desplegado (bucket S3 + tabla `mrsushi-products-<stage>`).
 
 ```bash
-python seed/scrape.py       # genera seed/catalog.json + seed/images/
-python -m seed.seed_catalog dev     # sube imágenes a S3 y escribe productos en DynamoDB
+python seed/scrape.py              # genera seed/catalog.json + seed/images/
+python -m seed.seed_catalog dev    # sube imágenes a S3 y escribe productos en DynamoDB
 ```
-
-Re-correr sobreescribe sin condición.
 
 ## Endpoints
 
