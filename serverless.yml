@@ -39,6 +39,27 @@ resources:
             RoleArn: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/LabRole
             InputPath: "$.detail"
 
+    NotificarRappiRule:
+      Type: AWS::Events::Rule
+      Properties:
+        EventBusName: mrsushi-event-bus-${self:provider.stage}
+        EventPattern:
+          source: [mrsushi.workflow]
+          detail-type: [EstadoCambiado]
+          detail:
+            source: [rappi]
+        Targets:
+          - Arn: !GetAtt NotificarRappiLambdaFunction.Arn
+            Id: notificarRappi
+
+    NotificarRappiPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !GetAtt NotificarRappiLambdaFunction.Arn
+        Action: lambda:InvokeFunction
+        Principal: events.amazonaws.com
+        SourceArn: !GetAtt NotificarRappiRule.Arn
+
     OrderWorkflowStateMachine:
       Type: AWS::StepFunctions::StateMachine
       Properties:

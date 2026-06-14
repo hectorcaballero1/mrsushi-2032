@@ -68,14 +68,8 @@ taskHandler:
 notificarRappi:
   handler: workflow/notificar_rappi.lambda_handler
   package: { include: ['./**'] }
-  events:
-    - eventBridge:
-        eventBus: mrsushi-event-bus-${self:provider.stage}
-        pattern:
-          source: [mrsushi.workflow]
-          detail-type: [EstadoCambiado]
-          detail:
-            source: [rappi]
+  # Event source definido manualmente en serverless.yml (Resources)
+  # para no forzar a Serverless a auto-crear el EventBus.
 
 # Webhooks
 recibirEntregaRappi:
