@@ -16,7 +16,7 @@ authorizer:
   package: { include: ['./**'] }
   # Lambda Authorizer: los endpoints protegidos lo referencian con  authorizer: authorizer
 
-# Catálogo
+# Catalogo
 listarProductos:
   handler: catalogo/listar_productos.lambda_handler
   package: { include: ['./**'] }

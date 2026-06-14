@@ -1,7 +1,6 @@
 org: ${env:SLS_ORG}
 service: mrsushi-infra
-# Stack STATEFUL: tablas + buckets + event bus. Se despliega UNA vez y NO se hace remove.
-# DeletionPolicy: Retain protege la data aunque alguien borre el stack por error.
+# Tablas + buckets + event bus
 # Antes de desplegar: export $(grep -v '^#' .env | xargs)
 
 provider:
@@ -29,6 +28,7 @@ resources:
           - { AttributeName: GSI1SK, AttributeType: S }
           - { AttributeName: GSI2PK, AttributeType: S }
           - { AttributeName: GSI2SK, AttributeType: S }
+          - { AttributeName: GSI3PK, AttributeType: S }
         KeySchema:
           - { AttributeName: PK, KeyType: HASH }
           - { AttributeName: SK, KeyType: RANGE }
@@ -42,6 +42,10 @@ resources:
             KeySchema:
               - { AttributeName: GSI2PK, KeyType: HASH }
               - { AttributeName: GSI2SK, KeyType: RANGE }
+            Projection: { ProjectionType: ALL }
+          - IndexName: GSI3
+            KeySchema:
+              - { AttributeName: GSI3PK, KeyType: HASH }
             Projection: { ProjectionType: ALL }
 
     ProductsTable:

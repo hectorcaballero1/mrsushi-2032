@@ -105,6 +105,7 @@ resources:
                       "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
                       "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "empacar", "taskToken.$": "$$.Task.Token" }
                     },
+                    "ResultPath": "$.empacarResult",
                     "Next": "RamaSource"
                   },
                   "RamaSource": {
@@ -119,6 +120,7 @@ resources:
                       "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
                       "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "repartir", "taskToken.$": "$$.Task.Token" }
                     },
+                    "ResultPath": "$.repartirResult",
                     "Next": "Entregado"
                   },
                   "EntregarARappi": {
@@ -128,6 +130,7 @@ resources:
                       "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
                       "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "entregar_rappi", "taskToken.$": "$$.Task.Token" }
                     },
+                    "ResultPath": "$.entregaRappiResult",
                     "Next": "Entregado"
                   },
                   "Entregado": { "Type": "Succeed" }
