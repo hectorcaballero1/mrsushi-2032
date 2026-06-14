@@ -1,0 +1,136 @@
+org: ${env:SLS_ORG}
+service: mrsushi-platform
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: us-east-1
+  memorySize: 512
+  timeout: 29
+  stage: ${opt:stage, 'dev'}
+  iam:
+    role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/LabRole
+  environment:
+    ORDERS_TABLE: mrsushi-orders-${self:provider.stage}
+    PRODUCTS_TABLE: mrsushi-products-${self:provider.stage}
+    USERS_TABLE: mrsushi-users-${self:provider.stage}
+    MENU_BUCKET: mrsushi-menu-images-${self:provider.stage}
+    EVENT_BUS: mrsushi-event-bus-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'change-me'}
+    RAPPI_API_URL: ${env:RAPPI_API_URL, ''}
+
+functions:
+  ${file(./functions.yml)}
+
+resources:
+  Resources:
+
+    StartWorkflowRule:
+      Type: AWS::Events::Rule
+      Properties:
+        EventBusName: mrsushi-event-bus-${self:provider.stage}
+        EventPattern:
+          source: ["mrsushi.pedidos"]
+          detail-type: ["PedidoCreado"]
+        Targets:
+          - Arn: !Ref OrderWorkflowStateMachine
+            Id: startWorkflow
+            RoleArn: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/LabRole
+            InputPath: "$.detail"
+
+    OrderWorkflowStateMachine:
+      Type: AWS::StepFunctions::StateMachine
+      Properties:
+        StateMachineName: mrsushi-order-workflow-${self:provider.stage}
+        RoleArn: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/LabRole
+        DefinitionString:
+          Fn::Sub:
+            - |
+              {
+                "Comment": "Workflow de pedidos Mr Sushi (task tokens)",
+                "StartAt": "Cocinar",
+                "States": {
+                  "Cocinar": {
+                    "Type": "Parallel",
+                    "ResultPath": "$.cookResult",
+                    "Branches": [
+                      {
+                        "StartAt": "RevisarFria",
+                        "States": {
+                          "RevisarFria": {
+                            "Type": "Choice",
+                            "Choices": [ { "Variable": "$.tieneFria", "BooleanEquals": true, "Next": "CocinaFria" } ],
+                            "Default": "SkipFria"
+                          },
+                          "CocinaFria": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                            "Parameters": {
+                              "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                              "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "cocina_fria", "taskToken.$": "$$.Task.Token" }
+                            },
+                            "End": true
+                          },
+                          "SkipFria": { "Type": "Pass", "End": true }
+                        }
+                      },
+                      {
+                        "StartAt": "RevisarCaliente",
+                        "States": {
+                          "RevisarCaliente": {
+                            "Type": "Choice",
+                            "Choices": [ { "Variable": "$.tieneCaliente", "BooleanEquals": true, "Next": "CocinaCaliente" } ],
+                            "Default": "SkipCaliente"
+                          },
+                          "CocinaCaliente": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                            "Parameters": {
+                              "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                              "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "cocina_caliente", "taskToken.$": "$$.Task.Token" }
+                            },
+                            "End": true
+                          },
+                          "SkipCaliente": { "Type": "Pass", "End": true }
+                        }
+                      }
+                    ],
+                    "Next": "Empacar"
+                  },
+                  "Empacar": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                    "Parameters": {
+                      "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                      "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "empacar", "taskToken.$": "$$.Task.Token" }
+                    },
+                    "Next": "RamaSource"
+                  },
+                  "RamaSource": {
+                    "Type": "Choice",
+                    "Choices": [ { "Variable": "$.source", "StringEquals": "rappi", "Next": "EntregarARappi" } ],
+                    "Default": "Repartir"
+                  },
+                  "Repartir": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                    "Parameters": {
+                      "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                      "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "repartir", "taskToken.$": "$$.Task.Token" }
+                    },
+                    "Next": "Entregado"
+                  },
+                  "EntregarARappi": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                    "Parameters": {
+                      "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                      "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "entregar_rappi", "taskToken.$": "$$.Task.Token" }
+                    },
+                    "Next": "Entregado"
+                  },
+                  "Entregado": { "Type": "Succeed" }
+                }
+              }
+            - ServiceName: ${self:service}
+              Stage: ${self:provider.stage, 'dev'}

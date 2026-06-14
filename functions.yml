@@ -1,0 +1,73 @@
+# ---------- Auth ----------
+register:
+  handler: auth/register.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /auth/register, method: post, cors: true }
+
+login:
+  handler: auth/login.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /auth/login, method: post, cors: true }
+
+authorizer:
+  handler: auth/authorizer.lambda_handler
+  package: { include: ['./**'] }
+  # Lambda Authorizer: los endpoints protegidos lo referencian con  authorizer: authorizer
+
+# ---------- Catálogo ----------
+listarProductos:
+  handler: catalogo/listar_productos.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /products, method: get, cors: true }
+
+# ---------- Pedidos ----------
+crearPedido:
+  handler: pedidos/crear_pedido.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /orders, method: post, cors: true }
+
+listarPedidos:
+  handler: pedidos/listar_pedidos.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /orders, method: get, cors: true, authorizer: authorizer }
+
+obtenerPedido:
+  handler: pedidos/obtener_pedido.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /orders/{id}, method: get, cors: true, authorizer: authorizer }
+
+avanzarPaso:
+  handler: pedidos/avanzar_paso.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /orders/{id}/advance, method: post, cors: true, authorizer: authorizer }
+
+# ---------- Workflow ----------
+taskHandler:
+  handler: workflow/task_handler.lambda_handler   # invocada por la state machine (sin http)
+  package: { include: ['./**'] }
+
+notificarRappi:
+  handler: workflow/notificar_rappi.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - eventBridge:
+        eventBus: mrsushi-event-bus-${self:provider.stage}
+        pattern:
+          source: [mrsushi.workflow]
+          detail-type: [EstadoCambiado]
+          detail:
+            source: [rappi]
+
+# ---------- Dashboard ----------
+dashboard:
+  handler: dashboard/dashboard.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /dashboard, method: get, cors: true, authorizer: authorizer }
