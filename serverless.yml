@@ -18,6 +18,7 @@ provider:
     EVENT_BUS: mrsushi-event-bus-${self:provider.stage}
     JWT_SECRET: ${env:JWT_SECRET, 'change-me'}
     RAPPI_API_URL: ${env:RAPPI_API_URL, ''}
+    RAPPI_WEBHOOK_SECRET: ${env:RAPPI_WEBHOOK_SECRET, 'change-me'}
 
 functions:
   ${file(./functions.yml)}

@@ -1,4 +1,4 @@
-# ---------- Auth ----------
+# Auth
 register:
   handler: auth/register.lambda_handler
   package: { include: ['./**'] }
@@ -16,14 +16,14 @@ authorizer:
   package: { include: ['./**'] }
   # Lambda Authorizer: los endpoints protegidos lo referencian con  authorizer: authorizer
 
-# ---------- Catálogo ----------
+# Catálogo
 listarProductos:
   handler: catalogo/listar_productos.lambda_handler
   package: { include: ['./**'] }
   events:
     - http: { path: /products, method: get, cors: true }
 
-# ---------- Pedidos ----------
+# Pedidos
 crearPedido:
   handler: pedidos/crear_pedido.lambda_handler
   package: { include: ['./**'] }
@@ -48,7 +48,7 @@ avanzarPaso:
   events:
     - http: { path: /orders/{id}/advance, method: post, cors: true, authorizer: authorizer }
 
-# ---------- Workflow ----------
+# Workflow
 taskHandler:
   handler: workflow/task_handler.lambda_handler   # invocada por la state machine (sin http)
   package: { include: ['./**'] }
@@ -65,7 +65,14 @@ notificarRappi:
           detail:
             source: [rappi]
 
-# ---------- Dashboard ----------
+# Webhooks
+recibirEntregaRappi:
+  handler: webhooks/recibir_entrega.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /webhooks/rappi/delivered, method: post, cors: true }
+
+# Dashboard
 dashboard:
   handler: dashboard/dashboard.lambda_handler
   package: { include: ['./**'] }
