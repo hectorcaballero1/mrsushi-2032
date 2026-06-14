@@ -1,8 +1,7 @@
 import os
 import json
-import time
 from common.responses import ok, error
-from common.dynamo import get_item, update_item
+from common.workflow_helper import get_order_by_external_ref, resume_step
 
 
 def lambda_handler(event, context):
@@ -13,20 +12,18 @@ def lambda_handler(event, context):
         return error(401, "Unauthorized")
 
     body = json.loads(event.get("body", "{}"))
-    tenant_id = body.get("tenantId")
-    order_id = body.get("orderId")
-    if not tenant_id or not order_id:
-        return error(400, "Missing tenantId or orderId")
+    # Rappi manda su propio id en "orderId" — lo buscamos por GSI3 (externalRef)
+    external_ref = body.get("orderId")
+    if not external_ref:
+        return error(400, "Missing orderId")
 
-    order = get_item("ORDERS_TABLE", f"TENANT#{tenant_id}", f"ORDER#{order_id}")
+    order = get_order_by_external_ref(external_ref)
     if not order:
         return error(404, "Order not found")
 
-    update_item(
-        "ORDERS_TABLE",
-        f"TENANT#{tenant_id}",
-        f"ORDER#{order_id}",
-        {"status": "entregado", "deliveredAt": body.get("deliveredAt", int(time.time()))},
-    )
+    try:
+        resume_step(order, "entregar_rappi")
+    except ValueError as e:
+        return error(400, str(e))
 
-    return ok({"message": "Order delivered"})
+    return ok({"message": "Delivery confirmed"})
