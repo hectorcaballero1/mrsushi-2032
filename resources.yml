@@ -94,6 +94,11 @@ resources:
       UpdateReplacePolicy: Retain
       Properties:
         BucketName: mrsushi-menu-images-${self:provider.stage}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          IgnorePublicAcls: false
+          BlockPublicPolicy: false
+          RestrictPublicBuckets: false
 
     EventBus:
       Type: AWS::Events::EventBus

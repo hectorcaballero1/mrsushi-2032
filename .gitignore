@@ -4,3 +4,5 @@ __pycache__/
 .env
 .venv/
 *.zip
+seed/catalog.json
+seed/images/

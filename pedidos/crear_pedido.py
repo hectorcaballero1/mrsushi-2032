@@ -4,24 +4,18 @@ from datetime import datetime, timezone
 from common.responses import created, error
 from common.dynamo import put_item
 from common.events import put_event
-
-# Categorías que van a cada cocina. Un item puede estar en ambas si aplica.
-CATEGORIAS_FRIAS = {"sashimi", "nigiri", "maki", "roll", "temaki", "ensalada", "fria", "frio"}
-CATEGORIAS_CALIENTES = {"ramen", "sopa", "tempura", "gyoza", "yakitori", "edamame", "karaage", "caliente", "miso"}
+from common.kitchen_stations import CATEGORY_TO_STATION
 
 
 def _calc_cocinas(items):
-    tiene_fria = False
-    tiene_caliente = False
+    tiene_fria = tiene_caliente = False
     for item in items:
-        cat = item.get("categoria", "").lower()
-        if cat in CATEGORIAS_FRIAS or "fria" in cat or "frio" in cat:
+        station = CATEGORY_TO_STATION.get(item.get("category", ""))
+        if station in ("fria", "ambas"):
             tiene_fria = True
-        if cat in CATEGORIAS_CALIENTES or "caliente" in cat:
+        if station in ("caliente", "ambas"):
             tiene_caliente = True
-        if tiene_fria and tiene_caliente:
-            break
-    # Si no se puede inferir, asumir que requiere ambas cocinas
+    # Fallback: pedido solo de bebidas/salsas/merch → pasa igual por un checkpoint
     if not tiene_fria and not tiene_caliente:
         tiene_fria = True
     return tiene_fria, tiene_caliente

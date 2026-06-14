@@ -13,7 +13,9 @@ from botocore.exceptions import ClientError
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from auth.register import hash_password
-from seed.config import REGION, USERS_TABLE
+REGION = "us-east-1"
+STAGE = sys.argv[1] if len(sys.argv) > 1 else "dev"
+USERS_TABLE = f"mrsushi-users-{STAGE}"
 
 SEDES = ["mrsushi-lamarina", "mrsushi-espinar"]
 PASSWORD = os.environ.get("ADMIN_SEED_PASSWORD", "admin123")
