@@ -34,19 +34,31 @@ listarPedidos:
   handler: pedidos/listar_pedidos.lambda_handler
   package: { include: ['./**'] }
   events:
-    - http: { path: /orders, method: get, cors: true, authorizer: authorizer }
+    - http:
+        path: /orders
+        method: get
+        cors: true
+        authorizer: authorizer
 
 obtenerPedido:
   handler: pedidos/obtener_pedido.lambda_handler
   package: { include: ['./**'] }
   events:
-    - http: { path: /orders/{id}, method: get, cors: true, authorizer: authorizer }
+    - http:
+        path: /orders/{id}
+        method: get
+        cors: true
+        authorizer: authorizer
 
 avanzarPaso:
   handler: pedidos/avanzar_paso.lambda_handler
   package: { include: ['./**'] }
   events:
-    - http: { path: /orders/{id}/advance, method: post, cors: true, authorizer: authorizer }
+    - http:
+        path: /orders/{id}/advance
+        method: post
+        cors: true
+        authorizer: authorizer
 
 # Workflow
 taskHandler:
@@ -77,4 +89,8 @@ dashboard:
   handler: dashboard/dashboard.lambda_handler
   package: { include: ['./**'] }
   events:
-    - http: { path: /dashboard, method: get, cors: true, authorizer: authorizer }
+    - http:
+        path: /dashboard
+        method: get
+        cors: true
+        authorizer: authorizer
