@@ -65,7 +65,7 @@ def upload_image(local_path: str, product_id: str) -> str | None:
             str(p),
             MENU_BUCKET,
             key,
-            ExtraArgs={"ACL": "public-read", "ContentType": _content_type(p.suffix)},
+            ExtraArgs={"ContentType": _content_type(p.suffix)},
         )
         return f"https://{MENU_BUCKET}.s3.{REGION}.amazonaws.com/{key}"
     except ClientError as e:
