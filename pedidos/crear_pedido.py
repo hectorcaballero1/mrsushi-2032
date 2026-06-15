@@ -1,5 +1,6 @@
 import uuid
 import json
+from decimal import Decimal
 from datetime import datetime, timezone
 from common.responses import created, error
 from common.dynamo import put_item
@@ -26,7 +27,8 @@ def lambda_handler(event, context):
 
     tenant_id = body.get("tenantId", "").strip()
     source = body.get("source", "web")
-    items = body.get("items", [])
+    # Convertir floats a Decimal — DynamoDB no acepta float
+    items = json.loads(json.dumps(body.get("items", [])), parse_float=Decimal)
     customer = body.get("customer", {})
     external_ref = body.get("externalRef")  # solo para source=rappi
     customer_id = body.get("customerId")    # opcional para source=web
