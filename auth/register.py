@@ -14,37 +14,23 @@ def lambda_handler(event, context):
     email = body.get("email", "").strip().lower()
     password = body.get("password", "")
     name = body.get("name", "")
-    role = body.get("role", "customer")
-    tenant_id = body.get("tenantId", "")
 
     if not email or not password:
         return error(400, "email and password required")
 
-    if role == "worker":
-        if not tenant_id:
-            return error(400, "tenantId required for workers")
-        pk = f"TENANT#{tenant_id}"
-    else:
-        pk = "BRAND#mrsushi"
-
-    if get_item("USERS_TABLE", pk, f"USER#{email}"):
+    if get_item("USERS_TABLE", "BRAND#mrsushi", f"USER#{email}"):
         return error(409, "User already exists")
 
     user_id = str(uuid.uuid4())
-    pw_hash = hash_password(password)
 
-    item = {
-        "PK": pk,
+    put_item("USERS_TABLE", {
+        "PK": "BRAND#mrsushi",
         "SK": f"USER#{email}",
         "GSI1PK": f"USER#{user_id}",
         "userId": user_id,
         "email": email,
         "name": name,
-        "role": role,
-        "passwordHash": pw_hash,
-    }
-    if role == "worker":
-        item["tenantId"] = tenant_id
-
-    put_item("USERS_TABLE", item)
+        "role": "customer",
+        "passwordHash": hash_password(password),
+    })
     return created({"userId": user_id})

@@ -14,9 +14,12 @@ def get_item(table_name, pk, sk):
     return table.get_item(Key={"PK": pk, "SK": sk}).get("Item")
 
 
-def put_item(table_name, item):
+def put_item(table_name, item, condition=None):
     table = get_table(table_name)
-    table.put_item(Item=item)
+    kwargs = {"Item": item}
+    if condition:
+        kwargs["ConditionExpression"] = condition
+    table.put_item(**kwargs)
 
 
 def update_item(table_name, pk, sk, updates):
@@ -30,6 +33,14 @@ def update_item(table_name, pk, sk, updates):
         ExpressionAttributeNames=names,
         ExpressionAttributeValues=vals,
     )
+
+
+def query_items(table_name, pk, sk_prefix=None):
+    table = get_table(table_name)
+    condition = Key("PK").eq(pk)
+    if sk_prefix:
+        condition &= Key("SK").begins_with(sk_prefix)
+    return table.query(KeyConditionExpression=condition).get("Items", [])
 
 
 def query(table_name, index_name, key_condition, asc=True):

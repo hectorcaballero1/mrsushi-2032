@@ -78,6 +78,19 @@ recibirEntregaRappi:
   events:
     - http: { path: /webhooks/rappi/delivered, method: post, cors: true }
 
+# Admin
+crearStaff:
+  handler: admin/staff.crear_staff
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /admin/staff, method: post, cors: true, authorizer: authorizer }
+
+listarStaff:
+  handler: admin/staff.listar_staff
+  package: { include: ['./**'] }
+  events:
+    - http: { path: /admin/staff, method: get, cors: true, authorizer: authorizer }
+
 # Dashboard
 dashboard:
   handler: dashboard/dashboard.lambda_handler
