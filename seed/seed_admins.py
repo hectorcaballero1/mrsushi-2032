@@ -17,7 +17,7 @@ REGION = "us-east-1"
 STAGE = sys.argv[1] if len(sys.argv) > 1 else "dev"
 USERS_TABLE = f"mrsushi-users-{STAGE}"
 
-SEDES = ["mrsushi-lamarina", "mrsushi-espinar"]
+SEDES = ["mrsushi-lamarina", "mrsushi-espinar", "mrsushi-malldelsur", "mrsushi-megaplaza"]
 PASSWORD = os.environ.get("ADMIN_SEED_PASSWORD", "admin123")
 
 table = boto3.resource("dynamodb", region_name=REGION).Table(USERS_TABLE)
