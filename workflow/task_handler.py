@@ -48,7 +48,7 @@ def lambda_handler(event, context):
         ExpressionAttributeValues={
             ":status": new_status,
             ":gsi2pk": f"TENANT#{tenant_id}#STATUS#{new_status}",
-            ":step_data": {"startedAt": now},
+            ":step_data": {},
             ":token": task_token,
             ":step": step,
         },
