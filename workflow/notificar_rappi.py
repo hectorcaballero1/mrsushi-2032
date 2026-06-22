@@ -9,7 +9,7 @@ STEP_TO_STATUS = {
     "cocina_caliente": "cocinando",
     "empacar": "empacando",
     "repartir": "repartiendo",
-    "entregar_rappi": "entregado",
+    "entregar_rappi": "entregando_a_rappi",
 }
 
 
@@ -43,8 +43,22 @@ def lambda_handler(event, context):
         method="POST",
     )
     try:
-        urllib.request.urlopen(req)
+        with urllib.request.urlopen(req) as resp:
+            print(
+                f"Rappi notificado (order={order_id}, step={step}, "
+                f"status={business_status}) → {resp.status} {resp.read()[:200]}"
+            )
+    except urllib.error.HTTPError as e:
+        # HTTPError (401, 404, etc.) es subclase de URLError; logueamos el cuerpo
+        print(
+            f"Error HTTP notificando a Rappi (order={order_id}, step={step}, "
+            f"url={url}): {e.code} {e.read()[:200]}"
+        )
     except urllib.error.URLError as e:
-        print(f"Error notificando a Rappi (order={order_id}, step={step}): {e}")
+        # Fallo de red/TLS/host inalcanzable (esquema https vs http, firewall, etc.)
+        print(
+            f"Error de red notificando a Rappi (order={order_id}, step={step}, "
+            f"url={url}): {e.reason}"
+        )
 
     return {"statusCode": 200}
