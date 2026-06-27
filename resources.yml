@@ -100,6 +100,18 @@ resources:
           BlockPublicPolicy: false
           RestrictPublicBuckets: false
 
+    MenuImagesBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref MenuImagesBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action: s3:GetObject
+              Resource: !Sub "${MenuImagesBucket.Arn}/*"
+
     EventBus:
       Type: AWS::Events::EventBus
       Properties:
