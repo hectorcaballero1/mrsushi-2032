@@ -60,6 +60,28 @@ avanzarPaso:
         cors: true
         authorizer: authorizer
 
+# Admisión: el cocinero toma el pedido o lo deriva a revisión
+tomarOrden:
+  handler: pedidos/tomar_orden.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http:
+        path: /orders/{id}/tomar-orden
+        method: post
+        cors: true
+        authorizer: authorizer
+
+# Revisión: el despachador cancela o re-envía a cocina
+revisarPedido:
+  handler: pedidos/revisar.lambda_handler
+  package: { include: ['./**'] }
+  events:
+    - http:
+        path: /orders/{id}/revisar
+        method: post
+        cors: true
+        authorizer: authorizer
+
 # Workflow
 taskHandler:
   handler: workflow/task_handler.lambda_handler   # invocada por la state machine (sin http)

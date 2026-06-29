@@ -16,9 +16,8 @@ def _calc_cocinas(items):
             tiene_fria = True
         if station in ("caliente", "ambas"):
             tiene_caliente = True
-    # Fallback: pedido solo de bebidas/salsas/merch → pasa igual por un checkpoint
-    if not tiene_fria and not tiene_caliente:
-        tiene_fria = True
+    # Un pedido sin cocina (solo bebidas/salsas/merch) queda fria=false y caliente=false:
+    # el estado NecesitaCocina del workflow lo salta directo a Empacar.
     return tiene_fria, tiene_caliente
 
 

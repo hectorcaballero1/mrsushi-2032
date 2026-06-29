@@ -2,7 +2,7 @@ from common.responses import ok, error
 from common.dynamo import get_table
 from boto3.dynamodb.conditions import Key
 
-STATUSES = ["recibido", "cocinando", "empacando", "repartiendo", "entregando_a_rappi", "entregado"]
+STATUSES = ["recibido", "en_revision", "cocinando", "empacando", "repartiendo", "entregando_a_rappi", "entregado", "cancelado"]
 
 
 def lambda_handler(event, context):

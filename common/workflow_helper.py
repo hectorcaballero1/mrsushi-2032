@@ -17,13 +17,14 @@ def get_order_by_external_ref(external_ref):
     return items[0] if items else None
 
 
-def resume_step(order, step, by=None):
+def resume_step(order, step, by=None, extra_output=None):
     """
     Reanuda el workflow de Step Functions para el step dado y actualiza el pedido.
 
     - Lee taskTokens[step] del pedido ya cargado.
-    - Llama SendTaskSuccess con el token (el output es el propio pedido para
-      que los estados siguientes conserven orderId, tenantId, source).
+    - Llama SendTaskSuccess con el token (el output lleva orderId/tenantId/source para
+      que los estados siguientes conserven el contexto; extra_output agrega campos de
+      decisión humana como decision/motivo para los Choice de admisión/revisión).
     - Actualiza en DynamoDB: status, steps[step].endedAt (y .by si se pasa),
       y elimina el token consumido de taskTokens.
 
@@ -36,6 +37,8 @@ def resume_step(order, step, by=None):
 
     # Status al COMPLETAR cada step (task_handler pone el status al empezar)
     STEP_TO_STATUS = {
+        "tomar_orden": "recibido",       # el Choice posterior decide a dónde va
+        "revisar_despacho": "en_revision",
         "cocina_fria": "cocinando",      # el otro branch puede seguir activo
         "cocina_caliente": "cocinando",
         "empacar": "empacando",          # task_handler(repartir/entregar_rappi) lo sigue
@@ -51,6 +54,8 @@ def resume_step(order, step, by=None):
         "tenantId": order.get("PK", "").removeprefix("TENANT#"),
         "source": order.get("source", "web"),
     }
+    if extra_output:
+        sf_output.update(extra_output)
     stepfunctions.send_task_success(
         taskToken=token,
         output=json.dumps(sf_output),

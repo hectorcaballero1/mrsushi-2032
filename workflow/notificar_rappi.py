@@ -5,6 +5,8 @@ import urllib.error
 from common.dynamo import get_item
 
 STEP_TO_STATUS = {
+    "tomar_orden": "recibido",
+    "revisar_despacho": "en_revision",
     "cocina_fria": "cocinando",
     "cocina_caliente": "cocinando",
     "empacar": "empacando",

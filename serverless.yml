@@ -69,9 +69,97 @@ resources:
           Fn::Sub:
             - |
               {
-                "Comment": "Workflow de pedidos Mr Sushi (task tokens)",
-                "StartAt": "Cocinar",
+                "Comment": "Workflow de pedidos Mr Sushi (admisión + revisión + task tokens)",
+                "StartAt": "TomarOrden",
                 "States": {
+                  "TomarOrden": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                    "Parameters": {
+                      "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                      "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "tomar_orden", "taskToken.$": "$$.Task.Token" }
+                    },
+                    "ResultPath": "$.tomarResult",
+                    "Next": "ChoiceTomar"
+                  },
+                  "ChoiceTomar": {
+                    "Type": "Choice",
+                    "Choices": [ { "And": [ { "Variable": "$.tomarResult.decision", "IsPresent": true }, { "Variable": "$.tomarResult.decision", "StringEquals": "derivado" } ], "Next": "MarcarEnRevision" } ],
+                    "Default": "NecesitaCocina"
+                  },
+                  "NecesitaCocina": {
+                    "Type": "Choice",
+                    "Choices": [ { "And": [ { "Variable": "$.tieneFria", "BooleanEquals": false }, { "Variable": "$.tieneCaliente", "BooleanEquals": false } ], "Next": "Empacar" } ],
+                    "Default": "Cocinar"
+                  },
+                  "MarcarEnRevision": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::dynamodb:updateItem",
+                    "Parameters": {
+                      "TableName": "mrsushi-orders-${Stage}",
+                      "Key": { "PK": { "S.$": "States.Format('TENANT#{}', $.tenantId)" }, "SK": { "S.$": "States.Format('ORDER#{}', $.orderId)" } },
+                      "UpdateExpression": "SET #st = :st, GSI2PK = :g, motivo = :m",
+                      "ExpressionAttributeNames": { "#st": "status" },
+                      "ExpressionAttributeValues": { ":st": { "S": "en_revision" }, ":g": { "S.$": "States.Format('TENANT#{}#STATUS#en_revision', $.tenantId)" }, ":m": { "S.$": "$.tomarResult.motivo" } }
+                    },
+                    "ResultPath": null,
+                    "Next": "PrepEvtRevision"
+                  },
+                  "PrepEvtRevision": {
+                    "Type": "Pass",
+                    "Parameters": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "en_revision", "status": "en_revision", "motivo.$": "$.tomarResult.motivo" },
+                    "ResultPath": "$.evtRevision",
+                    "Next": "NotificarEnRevision"
+                  },
+                  "NotificarEnRevision": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::events:putEvents",
+                    "Parameters": { "Entries": [ { "EventBusName": "mrsushi-event-bus-${Stage}", "Source": "mrsushi.workflow", "DetailType": "EstadoCambiado", "Detail.$": "States.JsonToString($.evtRevision)" } ] },
+                    "ResultPath": null,
+                    "Next": "RevisarDespacho"
+                  },
+                  "RevisarDespacho": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                    "Parameters": {
+                      "FunctionName": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ServiceName}-${Stage}-taskHandler",
+                      "Payload": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "revisar_despacho", "taskToken.$": "$$.Task.Token" }
+                    },
+                    "ResultPath": "$.revisionResult",
+                    "Next": "ChoiceRevision"
+                  },
+                  "ChoiceRevision": {
+                    "Type": "Choice",
+                    "Choices": [ { "Variable": "$.revisionResult.decision", "StringEquals": "cancelar", "Next": "MarcarCancelado" } ],
+                    "Default": "NecesitaCocina"
+                  },
+                  "MarcarCancelado": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::dynamodb:updateItem",
+                    "Parameters": {
+                      "TableName": "mrsushi-orders-${Stage}",
+                      "Key": { "PK": { "S.$": "States.Format('TENANT#{}', $.tenantId)" }, "SK": { "S.$": "States.Format('ORDER#{}', $.orderId)" } },
+                      "UpdateExpression": "SET #st = :st, GSI2PK = :g",
+                      "ExpressionAttributeNames": { "#st": "status" },
+                      "ExpressionAttributeValues": { ":st": { "S": "cancelado" }, ":g": { "S.$": "States.Format('TENANT#{}#STATUS#cancelado', $.tenantId)" } }
+                    },
+                    "ResultPath": null,
+                    "Next": "PrepEvtCancel"
+                  },
+                  "PrepEvtCancel": {
+                    "Type": "Pass",
+                    "Parameters": { "orderId.$": "$.orderId", "tenantId.$": "$.tenantId", "source.$": "$.source", "step": "cancelado", "status": "cancelado" },
+                    "ResultPath": "$.evtCancel",
+                    "Next": "NotificarCancelado"
+                  },
+                  "NotificarCancelado": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::events:putEvents",
+                    "Parameters": { "Entries": [ { "EventBusName": "mrsushi-event-bus-${Stage}", "Source": "mrsushi.workflow", "DetailType": "EstadoCambiado", "Detail.$": "States.JsonToString($.evtCancel)" } ] },
+                    "ResultPath": null,
+                    "Next": "Cancelado"
+                  },
+                  "Cancelado": { "Type": "Succeed" },
                   "Cocinar": {
                     "Type": "Parallel",
                     "ResultPath": "$.cookResult",

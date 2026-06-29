@@ -1,4 +1,6 @@
 STEP_TO_ALLOWED_ROLES = {
+    "tomar_orden":      ["cocinero", "admin"],
+    "revisar_despacho": ["despachador", "admin"],
     "cocina_fria":    ["cocinero", "admin"],
     "cocina_caliente": ["cocinero", "admin"],
     "empacar":        ["despachador", "admin"],

@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 
 # Status que corresponde al INICIO de cada step (resume_step pone el status al cerrarlo)
 STEP_TO_STATUS = {
+    "tomar_orden": "recibido",          # espera al cocinero; el pedido sigue "recibido"
+    "revisar_despacho": "en_revision",  # espera al despachador
     "cocina_fria": "cocinando",
     "cocina_caliente": "cocinando",
     "empacar": "empacando",
